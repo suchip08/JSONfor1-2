@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Employee Management System - Dashboard">
+    <title>Employee Management System</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <span class="logo-icon">🏢</span>
+            <span>EMS</span>
+        </div>
+        <ul class="navbar-links">
+            <li><a href="/" class="active">Dashboard</a></li>
+            <li><a href="pages/employees.html">Employees</a></li>
+            <li><a href="pages/departments.html">Departments</a></li>
+            <li><a href="#" onclick="logout()" style="color: var(--danger);">🚪 Logout</a></li>
+        </ul>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <div class="container">
+
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1>Dashboard</h1>
+                <p>Welcome, <strong id="welcomeUser">User</strong>! Manage your organization.</p>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-value" id="totalEmployees">—</div>
+                <div class="stat-label">Total Employees</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🏬</div>
+                <div class="stat-value" id="totalDepartments">—</div>
+                <div class="stat-label">Departments</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-value" id="avgSalary">—</div>
+                <div class="stat-label">Average Salary</div>
+            </div>
+        </div>
+
+        <!-- Quick Links -->
+        <h2 style="margin-bottom: 1rem; font-size: 1.2rem;">Quick Actions</h2>
+        <div class="quick-links">
+            <a href="pages/employees.html" class="quick-link-card">
+                <div class="link-icon">👤</div>
+                <div class="link-text">
+                    <h3>Manage Employees</h3>
+                    <p>View, add, edit, and delete employees</p>
+                </div>
+            </a>
+            <a href="pages/departments.html" class="quick-link-card">
+                <div class="link-icon">🏢</div>
+                <div class="link-text">
+                    <h3>Manage Departments</h3>
+                    <p>View, add, edit, and delete departments</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Recent Employees Table -->
+        <h2 style="margin-top: 2.5rem; margin-bottom: 1rem; font-size: 1.2rem;">Recent Employees</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Designation</th>
+                        <th>Salary</th>
+                    </tr>
+                </thead>
+                <tbody id="recentEmployeesBody">
+                    <tr>
+                        <td colspan="5" class="loading">
+                            <div class="spinner"></div>
+                            <p>Loading...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        if (!checkAuth()) { /* redirects */ } else {
+            document.getElementById('welcomeUser').textContent = getUsername();
+            loadDashboard();
+        }
+
+        async function loadDashboard() {
+            try {
+                const [employees, departments] = await Promise.all([
+                    ApiService.getAllEmployees(),
+                    ApiService.getAllDepartments()
+                ]);
+
+                document.getElementById('totalEmployees').textContent = employees.length;
+                document.getElementById('totalDepartments').textContent = departments.length;
+
+                if (employees.length > 0) {
+                    const totalSalary = employees.reduce((sum, emp) => sum + (emp.salary || 0), 0);
+                    document.getElementById('avgSalary').textContent = formatSalary(Math.round(totalSalary / employees.length));
+                } else {
+                    document.getElementById('avgSalary').textContent = '₹0';
+                }
+
+                const recent = employees.slice(-5).reverse();
+                const tbody = document.getElementById('recentEmployeesBody');
+
+                if (recent.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><div class="empty-icon">📭</div><p>No employees yet.</p></td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = recent.map(emp => `
+                    <tr>
+                        <td><strong>${emp.name}</strong></td>
+                        <td>${emp.email}</td>
+                        <td><span class="badge badge-accent">${emp.departmentName || '—'}</span></td>
+                        <td>${emp.designation || '—'}</td>
+                        <td class="salary-cell">${formatSalary(emp.salary)}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Dashboard error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
