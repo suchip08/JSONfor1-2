@@ -3,7 +3,12 @@ package com.example.demo.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.dto.EmployeeDto;
 import com.example.demo.entity.Department;
@@ -15,6 +20,8 @@ import com.example.demo.repository.EmployeeRepository;
 @Service
 public class EmployeeService {
 
+    private static final Logger log = LoggerFactory.getLogger(EmployeeService.class);
+
     private final EmployeeRepository employeeRepository;
     private final DepartmentRepository departmentRepository;
 
@@ -25,22 +32,26 @@ public class EmployeeService {
     }
 
     // Get all employees
-    public List<EmployeeDto> getAllEmployees() {
-        return employeeRepository.findAll()
-                .stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+    @Transactional(readOnly = true)
+    public Page<EmployeeDto> getAllEmployees(Pageable pageable) {
+        log.info("Fetching all employees with pagination: {}", pageable);
+        return employeeRepository.findAll(pageable)
+                .map(this::toDto);
     }
 
     // Get employee by ID
+    @Transactional(readOnly = true)
     public EmployeeDto getEmployeeById(Long id) {
+        log.info("Fetching employee with id: {}", id);
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
         return toDto(employee);
     }
 
     // Get employees by department
+    @Transactional(readOnly = true)
     public List<EmployeeDto> getEmployeesByDepartment(Long departmentId) {
+        log.info("Fetching employees for department id: {}", departmentId);
         return employeeRepository.findByDepartmentId(departmentId)
                 .stream()
                 .map(this::toDto)
@@ -48,22 +59,26 @@ public class EmployeeService {
     }
 
     // Search employees by keyword
-    public List<EmployeeDto> searchEmployees(String keyword) {
-        return employeeRepository.searchByKeyword(keyword)
-                .stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+    @Transactional(readOnly = true)
+    public Page<EmployeeDto> searchEmployees(String keyword, Pageable pageable) {
+        log.info("Searching employees with keyword '{}' and pagination: {}", keyword, pageable);
+        return employeeRepository.searchByKeyword(keyword, pageable)
+                .map(this::toDto);
     }
 
     // Create employee
+    @Transactional
     public EmployeeDto createEmployee(EmployeeDto dto) {
+        log.info("Creating new employee with email: {}", dto.getEmail());
         Employee employee = toEntity(dto);
         Employee saved = employeeRepository.save(employee);
         return toDto(saved);
     }
 
     // Update employee
+    @Transactional
     public EmployeeDto updateEmployee(Long id, EmployeeDto dto) {
+        log.info("Updating employee with id: {}", id);
         Employee existing = employeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
 
@@ -86,7 +101,9 @@ public class EmployeeService {
     }
 
     // Delete employee
+    @Transactional
     public void deleteEmployee(Long id) {
+        log.info("Deleting employee with id: {}", id);
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
         employeeRepository.delete(employee);
