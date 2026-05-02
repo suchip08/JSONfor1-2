@@ -61,7 +61,8 @@ const ApiService = {
             headers: getAuthHeaders()
         });
         await handleResponse(response);
-        return response.json();
+        const data = await response.json();
+        return data.content !== undefined ? data.content : data;
     },
 
     getDepartmentById: async function (id) {
@@ -107,7 +108,8 @@ const ApiService = {
             headers: getAuthHeaders()
         });
         await handleResponse(response);
-        return response.json();
+        const data = await response.json();
+        return data.content !== undefined ? data.content : data;
     },
 
     getEmployeeById: async function (id) {
@@ -132,7 +134,8 @@ const ApiService = {
             headers: getAuthHeaders()
         });
         await handleResponse(response);
-        return response.json();
+        const data = await response.json();
+        return data.content !== undefined ? data.content : data;
     },
 
     createEmployee: async function (data) {
